@@ -1,10 +1,13 @@
 const express = require("express");
 const app = express();
-import bodyParser from 'body-parser';
-import { getUserList ,findUserById } from "./user";
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(bodyParser.json())
+import bodyParser from "body-parser";
+import { getUserList, findUserById } from "./user";
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 const userList = getUserList(); // assume for now this is your database
+
+const swaggerUi = require("swagger-ui-express"),
+  swaggerDocument = require("./swagger.json");
 
 // GET Call for all users
 app.get("/users", (req, res) => {
@@ -23,10 +26,9 @@ app.get("/", (req, res) => {
   });
 });
 
-//  POST call - Means you are adding new user into database 
+//  POST call - Means you are adding new user into database
 
 app.post("/addUser", (req, res) => {
-
   if (!req.body.name) {
     return res.status(400).send({
       success: "false",
@@ -41,9 +43,9 @@ app.post("/addUser", (req, res) => {
   const user = {
     id: userList.length + 1,
     isPublic: req.body.isPublic,
-    name:  req.body.name,
+    name: req.body.name,
     companies: req.body.companies,
-    books:  req.body.books
+    books: req.body.books,
   };
   userList.push(user);
   return res.status(201).send({
@@ -53,26 +55,26 @@ app.post("/addUser", (req, res) => {
   });
 });
 
-//  PUt call - Means you are updating new user into database 
+//  PUt call - Means you are updating new user into database
 
-app.put("/updateUser/:id", (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const userFound=findUserById(id)
+app.put("/user/:userId", (req, res) => {
+  console.log(req.params);
+  const id = parseInt(req.params.userId, 10);
+  const userFound = findUserById(id);
 
   if (!userFound) {
     return res.status(404).send({
-      success: 'false',
-      message: 'user not found',
+      success: "false",
+      message: "user not found",
     });
   }
 
-  const updatedUser= {
-      id: id,
-      isPublic: req.body.isPublic || userFound.body.isPublic,
-      name:req.body.name || userFound.body.name,
-      companies: req.body.companies || userFound.body.companies,
-      books: req.body.books || userFound.body.books
-   
+  const updatedUser = {
+    id: id,
+    isPublic: req.body.isPublic || userFound.body.isPublic,
+    name: req.body.name || userFound.body.name,
+    companies: req.body.companies || userFound.body.companies,
+    books: req.body.books || userFound.body.books,
   };
 
   if (!updatedUser.name) {
@@ -88,42 +90,43 @@ app.put("/updateUser/:id", (req, res) => {
   }
 
   for (let i = 0; i < userList.length; i++) {
-      if (userList[i].id === id) {
-          userList[i] = updatedUser;
-          return res.status(201).send({
-            success: 'true',
-            message: 'user updated successfully',
-            updatedUser
-          
-          });
-      }
-  }
-  return  res.status(404).send({
-            success: 'true',
-            message: 'error in update'
-           
-     });
-})
-
-//  Delete call - Means you are deleting new user from database 
-
-app.delete("/deleteUser/:id", (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  for(let i = 0; i < userList.length; i++){
-      if(userList[i].id === id){
-           userList.splice(i,1);
-           return res.status(201).send({
-            success: 'true',
-            message: 'user deleted successfully'
-          });
-      }
+    if (userList[i].id === id) {
+      userList[i] = updatedUser;
+      return res.status(201).send({
+        success: "true",
+        message: "user updated successfully",
+        updatedUser,
+      });
+    }
   }
   return res.status(404).send({
-              success: 'true',
-              message: 'error in delete'   
-    });
-})
+    success: "true",
+    message: "error in update",
+  });
+});
 
+//  Delete call - Means you are deleting new user from database
+
+app.delete("/user/:userId", (req, res) => {
+  console.log(req.params);
+  const id = parseInt(req.params.userId, 10);
+  console.log(id);
+  for (let i = 0; i < userList.length; i++) {
+    if (userList[i].id === id) {
+      userList.splice(i, 1);
+      return res.status(201).send({
+        success: "true",
+        message: "user deleted successfully",
+      });
+    }
+  }
+  return res.status(404).send({
+    success: "true",
+    message: "error in delete",
+  });
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.listen(8000, () => {
   console.log("server listening on port 8000!");
